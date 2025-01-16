@@ -76,7 +76,30 @@ export const signup = async (req, res) => {
 }
 
 export const login = async (req, res) => {
-    res.send('login')
+   try {
+    const { email, password } = req.body
+
+    const user = await User.findOne({ email })
+
+    if (user && await user.comparePassword(password)) {
+        const { accessToken, refreshToken } = generateTokens(user._id)
+        
+        await storeRefreshToken(user._id, refreshToken)
+        setCookies(res, accessToken, refreshToken)
+
+        res.status(200).json({
+            user: {
+                id: user._id,
+                email: user.email,
+                name: user.name,
+                role: user.role
+            },
+            message: 'User logged in successfully'
+        })
+    }
+   } catch (error) {
+       res.status(500).json({ message: error.message })
+   }
 }
 
 export const logout = async (req, res) => {
